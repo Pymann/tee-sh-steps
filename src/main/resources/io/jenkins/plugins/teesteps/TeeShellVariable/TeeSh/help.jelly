@@ -1,0 +1,9 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+  <p>Works like <code>sh</code>, but additionally writes stdout/stderr to a file.</p>
+  <pre>teeSh script: 'make all', file: 'logs/build.log'
+def rc = teeSh(script: './test.sh', file: 'logs/test.log', append: true, returnStatus: true)
+teeSh 'make', 'build.log'</pre>
+  <p><code>file</code> (required, relative to the workspace), <code>append</code> (default: false).
+  All other parameters are passed to <code>sh</code> unchanged.</p>
+</j:jelly>

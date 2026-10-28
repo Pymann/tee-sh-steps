@@ -1,0 +1,9 @@
+<div>
+  Block step: everything the enclosed steps write to the build log (<code>sh</code>, <code>bat</code>,
+  <code>powershell</code>, <code>echo</code>, …) is also written to the given file.
+  Jenkins console annotations are removed in the file.
+  <pre>teeOutput(file: 'logs/all.log') {
+    sh 'make'
+    sh 'make test'
+}</pre>
+</div>

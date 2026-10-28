@@ -1,0 +1,5 @@
+<?jelly escape-by-default='true'?>
+<div>
+  Pipeline steps <code>teeSh</code>, <code>teeBat</code> and <code>teeOutput</code>:
+  write stdout/stderr to the build log and to a file at the same time.
+</div>
