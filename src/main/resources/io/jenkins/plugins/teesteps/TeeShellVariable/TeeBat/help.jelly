@@ -1,8 +1,13 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core">
-  <p>Works like <code>bat</code>, but additionally writes stdout/stderr to a file.</p>
+  <p>Works like <code>bat</code>, but additionally writes the output of the commands to a file.</p>
   <pre>teeBat script: 'build.cmd', file: 'logs\\build.log'
 def rc = teeBat(script: 'test.cmd', file: 'logs\\test.log', append: true, returnStatus: true)</pre>
-  <p><code>file</code> (required, relative to the workspace), <code>append</code> (default: false).
-  All other parameters are passed to <code>bat</code> unchanged.</p>
+  <ul>
+    <li><code>file</code> (required): path relative to the workspace.</li>
+    <li><code>append</code> (default: false): append instead of truncating the file.</li>
+    <li><code>includeCommands</code> (default: false): echoed commands (<code>C:\ws&gt;cmd</code>) are always
+      shown in the build log; set to true to write them to the file as well.</li>
+  </ul>
+  <p>All other parameters are passed to <code>bat</code> unchanged.</p>
 </j:jelly>

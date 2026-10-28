@@ -58,6 +58,43 @@ class TeeShellStepsTest {
         assertThat(log, containsString("hello-stderr"));
         assertThat(log, containsString("second"));
         assertThat(log, not(containsString("\u001B[8mha:"))); // no console annotations
+        // commands are shown in the build log as usual, but not written to the file
+        j.assertLogContains("+ echo hello-stdout", b);
+        j.assertLogNotContains("\u001eTEE\u001e", b);
+        assertThat(log, not(containsString("+ echo")));
+        assertThat(log, not(containsString("\u001eTEE\u001e")));
+        assertThat(log, not(containsString("set -x")));
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void includeCommandsKeepsTrace() throws Exception {
+        WorkflowJob p = j.createProject(WorkflowJob.class, "trace");
+        p.setDefinition(new CpsFlowDefinition(
+                "node { teeSh script: 'echo traced', file: 'trace.log', includeCommands: true }", true));
+        WorkflowRun b = j.buildAndAssertSuccess(p);
+        j.assertLogContains("+ echo traced", b);
+        assertThat(readWorkspaceFile(p, "trace.log"), containsString("+ echo traced"));
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void failsOnFirstErrorLikeSh() throws Exception {
+        WorkflowJob p = j.createProject(WorkflowJob.class, "errexit");
+        p.setDefinition(
+                new CpsFlowDefinition("node { teeSh script: 'false\\necho not-reached', file: 'e.log' }", true));
+        WorkflowRun b = j.buildAndAssertStatus(Result.FAILURE, p);
+        j.assertLogNotContains("not-reached", b);
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void ownShebangIsRespected() throws Exception {
+        WorkflowJob p = j.createProject(WorkflowJob.class, "shebang");
+        p.setDefinition(new CpsFlowDefinition(
+                "node { teeSh script: '#!/bin/sh -xe\\necho own-shebang', file: 's.log' }", true));
+        j.buildAndAssertSuccess(p);
+        assertThat(readWorkspaceFile(p, "s.log"), containsString("+ echo own-shebang"));
     }
 
     @Test
@@ -131,13 +168,16 @@ class TeeShellStepsTest {
         WorkflowJob p = j.createProject(WorkflowJob.class, "bat");
         p.setDefinition(new CpsFlowDefinition("""
                 node {
-                  def rc = teeBat(script: '@echo hello-bat\\r\\n@exit /b 4', file: 'out\\\\bat.log', returnStatus: true)
+                  def rc = teeBat(script: 'echo hello-bat\\r\\nexit /b 4', file: 'out\\\\bat.log', returnStatus: true)
                   echo "rc=${rc}"
                 }
                 """, true));
         WorkflowRun b = j.buildAndAssertSuccess(p);
         j.assertLogContains("hello-bat", b);
         j.assertLogContains("rc=4", b);
-        assertThat(readWorkspaceFile(p, "out/bat.log"), containsString("hello-bat"));
+        j.assertLogContains(">echo hello-bat", b); // echoed command in the build log
+        String log = readWorkspaceFile(p, "out/bat.log");
+        assertThat(log, containsString("hello-bat"));
+        assertThat(log, not(containsString(">echo"))); // but not in the file
     }
 }

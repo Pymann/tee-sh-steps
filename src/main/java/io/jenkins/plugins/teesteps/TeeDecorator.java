@@ -50,8 +50,16 @@ final class TeeDecorator extends TaskListenerDecorator {
     }
 
     /**
-     * Writes each line unchanged to the build log and, without Jenkins console annotations
+     * Prefix that teeSh/teeBat put in front of command trace/echo lines (via PS4/PROMPT).
+     * Must match {@code MARKER} in TeeShell.groovy.
+     */
+    static final byte[] COMMAND_MARKER = "\u001eTEE\u001e".getBytes(StandardCharsets.US_ASCII);
+
+    /**
+     * Writes each line to the build log and, without Jenkins console annotations
      * (hyperlinks etc.), to the file. Lines without annotations are copied byte for byte.
+     * Command lines marked with {@link #COMMAND_MARKER} go to the build log only, with the
+     * marker removed.
      */
     static final class TeeStream extends LineTransformationOutputStream {
 
@@ -65,6 +73,13 @@ final class TeeDecorator extends TaskListenerDecorator {
 
         @Override
         protected void eol(byte[] b, int len) throws IOException {
+            int marker = indexOf(b, len, COMMAND_MARKER);
+            if (marker >= 0) {
+                logger.write(b, 0, marker);
+                int rest = marker + COMMAND_MARKER.length;
+                logger.write(b, rest, len - rest);
+                return;
+            }
             logger.write(b, 0, len);
             if (ConsoleNote.findPreamble(b, 0, len) >= 0) {
                 String plain = ConsoleNote.removeNotes(new String(b, 0, len, StandardCharsets.UTF_8));
@@ -72,6 +87,19 @@ final class TeeDecorator extends TaskListenerDecorator {
             } else {
                 file.write(b, 0, len);
             }
+        }
+
+        static int indexOf(byte[] b, int len, byte[] needle) {
+            outer:
+            for (int i = 0; i <= len - needle.length; i++) {
+                for (int k = 0; k < needle.length; k++) {
+                    if (b[i + k] != needle[k]) {
+                        continue outer;
+                    }
+                }
+                return i;
+            }
+            return -1;
         }
 
         @Override

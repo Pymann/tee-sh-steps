@@ -1,9 +1,15 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core">
-  <p>Works like <code>sh</code>, but additionally writes stdout/stderr to a file.</p>
+  <p>Works like <code>sh</code>, but additionally writes the output of the commands to a file.</p>
   <pre>teeSh script: 'make all', file: 'logs/build.log'
 def rc = teeSh(script: './test.sh', file: 'logs/test.log', append: true, returnStatus: true)
 teeSh 'make', 'build.log'</pre>
-  <p><code>file</code> (required, relative to the workspace), <code>append</code> (default: false).
-  All other parameters are passed to <code>sh</code> unchanged.</p>
+  <ul>
+    <li><code>file</code> (required): path relative to the workspace.</li>
+    <li><code>append</code> (default: false): append instead of truncating the file.</li>
+    <li><code>includeCommands</code> (default: false): the command trace (<code>+ cmd</code>) is always
+      shown in the build log; set to true to write it to the file as well.</li>
+  </ul>
+  <p>All other parameters are passed to <code>sh</code> unchanged.
+  A script with its own shebang line is run as-is, including its own trace settings.</p>
 </j:jelly>
